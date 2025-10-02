@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/DustinMeyer1010/Ramen/keys"
+	"github.com/DustinMeyer1010/ramen/keys"
 )
 
 // Default keys for stopwatch

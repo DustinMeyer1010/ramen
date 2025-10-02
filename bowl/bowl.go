@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/DustinMeyer1010/Ramen/cursor"
+	"github.com/DustinMeyer1010/ramen/cursor"
 	"golang.org/x/term"
 )
 

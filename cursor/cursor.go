@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/DustinMeyer1010/Ramen/keys"
+	"github.com/DustinMeyer1010/ramen/keys"
 )
 
 type cursor struct {

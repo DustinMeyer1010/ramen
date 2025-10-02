@@ -3,7 +3,7 @@ package bowl
 import (
 	"fmt"
 
-	"github.com/DustinMeyer1010/Ramen/keys"
+	"github.com/DustinMeyer1010/ramen/keys"
 )
 
 type selectionMenu struct {

@@ -1,4 +1,4 @@
-module github.com/DustinMeyer1010/Ramen
+module github.com/DustinMeyer1010/ramen
 
 go 1.24.2
 
