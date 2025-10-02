@@ -1,4 +1,4 @@
-package bowl
+package ramen
 
 import (
 	"log"
