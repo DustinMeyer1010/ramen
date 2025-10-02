@@ -1,12 +1,27 @@
 package cursor
 
-type TerminalCfg struct {
+import (
+	"os"
+
+	"golang.org/x/term"
+)
+
+var terminal = Terminal{}
+
+type Terminal struct {
 	Height int
 	Width  int
 }
 
-var TerminalConfig = TerminalCfg{Height: 10, Width: 50}
+func (t *Terminal) GetDimensions() error {
+	width, height, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		return err
+	}
 
-func UpdateTerminalConfig(height, width int) {
-	TerminalConfig = TerminalCfg{Height: height, Width: width}
+	t.Height = height
+	t.Width = width
+
+	return nil
+
 }

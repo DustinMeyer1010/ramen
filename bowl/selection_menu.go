@@ -1,8 +1,7 @@
-package terminal
+package bowl
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/DustinMeyer1010/Ramen/keys"
 )
@@ -21,7 +20,7 @@ func NewSelectionMenu(items []string) (selectionMenu, error) {
 	return selectionMenu{itemCount: len(items), items: items, currentSelection: 0}, nil
 }
 
-func (s *selectionMenu) Draw() {
+func (s *selectionMenu) Render() {
 	cur.ClearTerminal()
 	if rawMode == -1 {
 		startRawMode()
@@ -45,7 +44,7 @@ func (s *selectionMenu) controlHandler() {
 			case keys.ControlC, keys.Esc:
 				{
 					cur.ClearTerminal()
-					os.Exit(1)
+					return
 				}
 			case keys.UpArrow:
 				s.handleUpSelect()

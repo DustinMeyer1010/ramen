@@ -4,24 +4,42 @@ import (
 	"os"
 )
 
-type Key string
+type key string
 
 var (
-	ControlC   Key = "\x1b"
-	Esc        Key = "\x03"
-	LowerQ     Key = "q"
-	UpperQ     Key = "Q"
-	LowerR     Key = "r"
-	Space      Key = " "
-	UpArrow    Key = "\033[A"
-	DownArrow  Key = "\033[B"
-	RightArrow Key = "\033[C"
-	LeftArrow  Key = "\033[D"
-	ClearLine  Key = "\033[2K"
-	Enter      Key = "\r"
+	ControlC   key = "\x1b"
+	Esc        key = "\x03"
+	LowerQ     key = "q"
+	UpperQ     key = "Q"
+	LowerR     key = "r"
+	Space      key = " "
+	UpArrow    key = "\033[A"
+	DownArrow  key = "\033[B"
+	RightArrow key = "\033[C"
+	LeftArrow  key = "\033[D"
+	Enter      key = "\r"
+	Empty      key = ""
 )
 
-func GetKeyPressed() Key {
+var KeyAlias map[key]string = map[key]string{
+	ControlC:   "Control-C",
+	Esc:        "Escape",
+	LowerQ:     "q",
+	UpperQ:     "Q",
+	LowerR:     "r",
+	UpArrow:    "↑",
+	RightArrow: "→",
+	LeftArrow:  "←",
+	DownArrow:  "↓",
+	Enter:      "Enter",
+	Empty:      "Empty-Character",
+}
+
+func NewKeyChannel() chan key {
+	return make(chan key)
+}
+
+func GetKeyPressed() key {
 	var buf = make([]byte, 3)
 	n, err := os.Stdin.Read(buf)
 
@@ -32,8 +50,31 @@ func GetKeyPressed() Key {
 	//fmt.Print(string(buf[:n]))
 
 	if n == 0 {
-		return Key("")
+		return key("")
 	}
 
-	return Key(buf[:n])
+	return key(buf[:n])
+}
+
+type KeyOptions []key
+
+func (k KeyOptions) Contains(pressedKey key) bool {
+	for _, key := range k {
+		if key == pressedKey {
+			return true
+		}
+	}
+	return false
+}
+
+func (k KeyOptions) IsEmpty() bool {
+	return k == nil
+}
+
+func (k KeyOptions) NotEmpty() bool {
+	return k != nil
+}
+
+func NewKeyOptions(keys ...key) KeyOptions {
+	return KeyOptions(keys)
 }

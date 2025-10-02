@@ -1,65 +1,42 @@
-package terminal
+package bowl
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/DustinMeyer1010/Ramen/keys"
 )
 
-type keyOptions []keys.Key
-
-func (k keyOptions) contains(pressedKey keys.Key) bool {
-	for _, key := range k {
-		if key == pressedKey {
-			return true
-		}
-	}
-	return false
-}
-
-func (k keyOptions) isEmpty() bool {
-	return len(k) == 0
-}
-
-func (k keyOptions) notEmpty() bool {
-	return len(k) > 0
-}
-
-func NewKeyOptions(keys ...keys.Key) keyOptions {
-	return keyOptions(keys)
-}
-
 // Default keys for stopwatch
 var defaultcfg = stopWatchConfiguration{
-	start: keyOptions{keys.Enter},
-	pause: keyOptions{keys.Space},
-	reset: keyOptions{keys.LowerR},
-	exist: keyOptions{keys.ControlC, keys.Esc},
+	start: keys.KeyOptions{keys.Enter},
+	pause: keys.KeyOptions{keys.Space},
+	reset: keys.KeyOptions{keys.LowerR},
+	exit:  keys.KeyOptions{keys.ControlC, keys.Esc},
 }
 
 type stopWatchConfiguration struct {
-	start keyOptions
-	pause keyOptions
-	reset keyOptions
-	exist keyOptions
+	start keys.KeyOptions
+	pause keys.KeyOptions
+	reset keys.KeyOptions
+	exit  keys.KeyOptions
 }
 
-func NewStopWatchCfg(start, pause, reset, exist keyOptions) stopWatchConfiguration {
+func NewStopWatchCfg(start, pause, reset, exit keys.KeyOptions) stopWatchConfiguration {
 	cfg := defaultcfg
 
-	if !start.notEmpty() {
+	if start.NotEmpty() {
 		cfg.start = start
 	}
-	if !pause.notEmpty() {
+	if pause.NotEmpty() {
 		cfg.pause = pause
 	}
-	if !reset.notEmpty() {
+	if reset.NotEmpty() {
 		cfg.reset = reset
 	}
-	if !exist.notEmpty() {
-		cfg.exist = exist
+
+	if exit.NotEmpty() {
+		cfg.exit = exit
 	}
 
 	return cfg
@@ -77,43 +54,44 @@ func NewStopWatch() stopwatch {
 }
 
 // Main loop for stopwatch functionality
-func (s *stopwatch) Draw(cfg stopWatchConfiguration) {
+func (s *stopwatch) Render(cfg stopWatchConfiguration) {
 	s.start = time.Now()
 	cur.Hide()
 	cur.ClearTerminal()
 	if rawMode == -1 {
 		startRawMode()
 	}
-
+	s.drawControls(cfg)
+	s.drawStopWatch()
 	s.controlHandler(cfg)
 }
 
 func (s *stopwatch) controlHandler(cfg stopWatchConfiguration) {
 
-	keysChan := make(chan keys.Key)
+	keysChan := keys.NewKeyChannel()
 
 	go func() {
 		for {
 			key := keys.GetKeyPressed()
-			if key != keys.Key("") {
+			if key != keys.Empty {
 				keysChan <- key
 			}
 
 		}
 	}()
-	s.drawstopwatch()
+
 	for {
 		if s.started {
-			s.drawstopwatch()
+			s.drawStopWatch()
 		}
 		// Key checking in go route to prevent blocking
 		select {
 		case key := <-keysChan:
 			switch {
-			case cfg.exist.contains(key):
+			case cfg.exit.Contains(key):
 				cur.ClearTerminal()
-				os.Exit(1)
-			case cfg.start.contains(key):
+				return
+			case cfg.start.Contains(key):
 
 				if s.started {
 					// functionality when stopwatch is STOPPED
@@ -125,11 +103,11 @@ func (s *stopwatch) controlHandler(cfg stopWatchConfiguration) {
 					s.start = time.Now()
 					s.started = true
 				}
-			case cfg.reset.contains(key):
+			case cfg.reset.Contains(key):
 				s.end = time.Now()
 				s.start = time.Now()
 				s.timelapsed = 0
-				s.drawstopwatch()
+				s.drawStopWatch()
 			default:
 				// ignore other keys
 			}
@@ -142,14 +120,21 @@ func (s *stopwatch) controlHandler(cfg stopWatchConfiguration) {
 }
 
 // Draws stop watch to screen based on the time passed from when it was started
-func (s *stopwatch) drawstopwatch() {
-	cur.Origin()
+func (s *stopwatch) drawStopWatch() {
+	cur.OriginBottom()
+	cur.Up(1)
 	elapsed := time.Since(s.start) + s.timelapsed
-	cur.DrawText(fmt.Sprintf("\rElapsed time: %02d:%02d:%02d",
+	cur.DrawText(fmt.Sprintf("%02d:%02d:%02d",
 		int(elapsed.Hours()),
 		int(elapsed.Minutes())%60,
 		int(elapsed.Seconds())%60,
 	))
+}
+
+func (s *stopwatch) drawControls(cfg stopWatchConfiguration) {
+	cur.OriginBottom()
+	cur.DrawText("Exit: ")
+	cur.DrawText(keys.KeyAlias[cfg.exit[0]])
 }
 
 func (s *stopwatch) GetTime() {

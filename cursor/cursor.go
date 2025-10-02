@@ -2,6 +2,7 @@ package cursor
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/DustinMeyer1010/Ramen/keys"
 )
@@ -24,14 +25,20 @@ const (
 	STEADY_BAR         cursorCode = 6
 	HIDE               string     = "\033[?25l"
 	SHOW               string     = "\033[?25h"
+	ClearLine          string     = "\033[2K"
 )
 
 var print = fmt.Print
 
 // Create cursor on the screen
 func NewCursor(x int, y int) cursor {
-	fmt.Printf("\033[%d q", STEADY)
 	c := cursor{x: x, y: y}
+	c.DrawContainer()
+	err := terminal.GetDimensions()
+
+	if err != nil {
+		log.Fatal("Unable to get terminal Dimensions")
+	}
 	c.Origin()
 	c.DrawContainer()
 
@@ -43,7 +50,7 @@ func NewCursor(x int, y int) cursor {
 // Cursor will not move outside of configured terminal height
 func (c *cursor) Down(n int) {
 	for range n {
-		if TerminalConfig.Height <= c.y {
+		if terminal.Height <= c.y {
 			return
 		}
 		c.y += 1
@@ -71,7 +78,7 @@ func (c *cursor) Right(n int) {
 
 	for range n {
 
-		if TerminalConfig.Width <= c.x {
+		if terminal.Width <= c.x {
 			return
 		}
 		c.x += 1
@@ -94,8 +101,8 @@ func (c *cursor) Left(n int) {
 
 // Move cursor back to 0,0
 func (c *cursor) Origin() {
-	c.Up(TerminalConfig.Height)
-	c.Left(TerminalConfig.Width)
+	c.Up(terminal.Height)
+	c.Left(terminal.Width)
 }
 
 // Move cursor to x, y cordinate
@@ -109,13 +116,19 @@ func (c *cursor) MoveTo(x, y int) {
 	c.Down(y)
 }
 
+// Move cursor to 0, Height cordinate
+func (c *cursor) OriginBottom() {
+	c.Origin()
+	c.Down(terminal.Height)
+}
+
 // Reset entire terminal to blank
 func (c *cursor) ClearTerminal() {
 	x := c.x
 	y := c.y
 	c.Origin()
-	for range TerminalConfig.Height {
-		print(keys.ClearLine)
+	for range terminal.Height {
+		print(ClearLine)
 		c.Down(1)
 	}
 	c.MoveTo(x, y)
@@ -124,8 +137,12 @@ func (c *cursor) ClearTerminal() {
 // Draws the height and width of terminal configuration
 func (c *cursor) DrawContainer() {
 	c.Origin()
-	c.Down(TerminalConfig.Height)
-	c.Right(TerminalConfig.Height)
+	for range 100 {
+		c.Down(terminal.Height)
+	}
+	for range 100 {
+		c.Right(terminal.Width)
+	}
 	c.Origin()
 }
 
@@ -133,7 +150,7 @@ func (c *cursor) DrawContainer() {
 //
 // Text will not wrap any text greater than terminal width will throw error
 func (c *cursor) DrawText(text string) error {
-	if c.x+len(text) > TerminalConfig.Width {
+	if c.x+len(text) > terminal.Width {
 		return fmt.Errorf("text too long for width of page")
 	}
 
@@ -155,7 +172,7 @@ func (c *cursor) GetY() int {
 
 // Clears the entire line the cursor is on
 func (c *cursor) ClearLine() {
-	print(keys.ClearLine)
+	print(ClearLine)
 }
 
 func (c *cursor) Hide() {
