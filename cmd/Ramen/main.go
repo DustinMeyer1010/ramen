@@ -1,7 +1,5 @@
 package main
 
-import "github.com/DustinMeyer1010/ramen/ramen"
-
 func main() {
 	s, _ := ramen.NewSelectionMenu([]string{"hello", "world", "option"}, ramen.NewSelectionMenuControls(nil, nil, nil, nil))
 	s.Render()
