@@ -8,38 +8,38 @@ import (
 )
 
 // Default keys for stopwatch
-var defaultcfg = stopWatchConfiguration{
+var defaultStopWatchControls = stopWatchControls{
 	start: keys.KeyOptions{keys.Enter},
 	pause: keys.KeyOptions{keys.Space},
 	reset: keys.KeyOptions{keys.LowerR},
 	exit:  keys.KeyOptions{keys.ControlC, keys.Esc},
 }
 
-type stopWatchConfiguration struct {
+type stopWatchControls struct {
 	start keys.KeyOptions
 	pause keys.KeyOptions
 	reset keys.KeyOptions
 	exit  keys.KeyOptions
 }
 
-func NewStopWatchCfg(start, pause, reset, exit keys.KeyOptions) stopWatchConfiguration {
-	cfg := defaultcfg
+func NewStopWatchControls(start, pause, reset, exit keys.KeyOptions) stopWatchControls {
+	controls := defaultStopWatchControls
 
-	if start.NotEmpty() {
-		cfg.start = start
+	if start.HasElements() {
+		controls.start = start
 	}
-	if pause.NotEmpty() {
-		cfg.pause = pause
+	if pause.HasElements() {
+		controls.pause = pause
 	}
-	if reset.NotEmpty() {
-		cfg.reset = reset
-	}
-
-	if exit.NotEmpty() {
-		cfg.exit = exit
+	if reset.HasElements() {
+		controls.reset = reset
 	}
 
-	return cfg
+	if exit.HasElements() {
+		controls.exit = exit
+	}
+
+	return controls
 }
 
 type stopwatch struct {
@@ -47,26 +47,27 @@ type stopwatch struct {
 	end        time.Time
 	started    bool
 	timelapsed time.Duration
+	controls   stopWatchControls
 }
 
-func NewStopWatch() stopwatch {
+func NewStopWatch(controls stopWatchControls) stopwatch {
 	return stopwatch{started: false}
 }
 
 // Main loop for stopwatch functionality
-func (s *stopwatch) Render(cfg stopWatchConfiguration) {
+func (s *stopwatch) Render() {
 	s.start = time.Now()
 	cur.Hide()
 	cur.ClearTerminal()
 	if rawMode == -1 {
 		startRawMode()
 	}
-	s.drawControls(cfg)
+	s.drawControls()
 	s.drawStopWatch()
-	s.controlHandler(cfg)
+	s.controlHandler()
 }
 
-func (s *stopwatch) controlHandler(cfg stopWatchConfiguration) {
+func (s *stopwatch) controlHandler() {
 
 	keysChan := keys.NewKeyChannel()
 
@@ -88,10 +89,10 @@ func (s *stopwatch) controlHandler(cfg stopWatchConfiguration) {
 		select {
 		case key := <-keysChan:
 			switch {
-			case cfg.exit.Contains(key):
+			case s.controls.exit.Contains(key):
 				cur.ClearTerminal()
 				return
-			case cfg.start.Contains(key):
+			case s.controls.start.Contains(key):
 
 				if s.started {
 					// functionality when stopwatch is STOPPED
@@ -103,7 +104,7 @@ func (s *stopwatch) controlHandler(cfg stopWatchConfiguration) {
 					s.start = time.Now()
 					s.started = true
 				}
-			case cfg.reset.Contains(key):
+			case s.controls.reset.Contains(key):
 				s.end = time.Now()
 				s.start = time.Now()
 				s.timelapsed = 0
@@ -131,12 +132,8 @@ func (s *stopwatch) drawStopWatch() {
 	))
 }
 
-func (s *stopwatch) drawControls(cfg stopWatchConfiguration) {
+func (s *stopwatch) drawControls() {
 	cur.OriginBottom()
 	cur.DrawText("Exit: ")
-	cur.DrawText(keys.KeyAlias[cfg.exit[0]])
-}
-
-func (s *stopwatch) GetTime() {
-
+	cur.DrawText(keys.KeyAlias[s.controls.exit[0]])
 }

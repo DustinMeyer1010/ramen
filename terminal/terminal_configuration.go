@@ -1,4 +1,4 @@
-package cursor
+package terminal
 
 import (
 	"os"

@@ -10,9 +10,46 @@ type selectionMenu struct {
 	itemCount        int
 	items            []string
 	currentSelection int
+	controls         selectionMenuControls
 }
 
-func NewSelectionMenu(items []string) (selectionMenu, error) {
+var defaultSelectMenuControls = selectionMenuControls{
+	up:       keys.KeyOptions{keys.UpArrow},
+	down:     keys.KeyOptions{keys.DownArrow},
+	selector: keys.KeyOptions{keys.Enter},
+	exit:     keys.KeyOptions{keys.ControlC, keys.Esc},
+}
+
+type selectionMenuControls struct {
+	up       keys.KeyOptions
+	down     keys.KeyOptions
+	selector keys.KeyOptions
+	exit     keys.KeyOptions
+}
+
+// Create new controls for selection menu
+//
+// nil or empty values result in default being used
+func NewSelectionMenuControls(up, down, selector, exit keys.KeyOptions) selectionMenuControls {
+	controls := defaultSelectMenuControls
+
+	if up.HasElements() {
+		controls.up = up
+	}
+	if down.HasElements() {
+		controls.down = down
+	}
+	if selector.HasElements() {
+		controls.selector = selector
+	}
+	if exit.HasElements() {
+		controls.exit = exit
+	}
+
+	return controls
+}
+
+func NewSelectionMenu(items []string, controls selectionMenuControls) (selectionMenu, error) {
 	if len(items) == 0 {
 		return selectionMenu{itemCount: 0, items: []string{}}, fmt.Errorf("selection menu must have at least one item")
 	}
@@ -39,22 +76,22 @@ func (s *selectionMenu) controlHandler() {
 
 	for {
 		pressedKey := keys.GetKeyPressed()
-		if len(pressedKey) > 0 {
-			switch pressedKey {
-			case keys.ControlC, keys.Esc:
-				{
-					cur.ClearTerminal()
-					return
-				}
-			case keys.UpArrow:
-				s.handleUpSelect()
-			case keys.DownArrow:
-				s.handleDownSelect()
-			case keys.Enter:
-				s.currentSelection = cur.GetY()
+		switch pressedKey {
+		case keys.ControlC, keys.Esc:
+			{
 				cur.ClearTerminal()
 				return
 			}
+		case keys.UpArrow:
+			s.handleUpSelect()
+		case keys.DownArrow:
+			s.handleDownSelect()
+		case keys.Enter:
+			s.currentSelection = cur.GetY()
+			cur.ClearTerminal()
+			return
+		default:
+			// ignore all other keys
 		}
 	}
 }

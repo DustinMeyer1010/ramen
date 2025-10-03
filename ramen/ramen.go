@@ -4,11 +4,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/DustinMeyer1010/ramen/cursor"
+	"github.com/DustinMeyer1010/ramen/terminal"
 	"golang.org/x/term"
 )
 
-var cur = cursor.NewCursor(0, 0)
+var cur = terminal.NewCursor(0, 0)
 var rawMode = -1
 var PrevTermState *term.State
 

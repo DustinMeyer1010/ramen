@@ -71,7 +71,7 @@ func (k KeyOptions) IsEmpty() bool {
 	return k == nil
 }
 
-func (k KeyOptions) NotEmpty() bool {
+func (k KeyOptions) HasElements() bool {
 	return k != nil
 }
 
