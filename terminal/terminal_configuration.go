@@ -90,3 +90,7 @@ func ResizeCheck(ch chan<- [2]int) {
 		}
 	}
 }
+
+func NewResizeChannel() chan [2]int {
+	return make(chan [2]int)
+}

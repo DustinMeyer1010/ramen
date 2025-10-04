@@ -8,6 +8,16 @@ import (
 	"github.com/DustinMeyer1010/ramen/terminal"
 )
 
+/*
+TODO:
+1. Render the help menu when pressing the help button
+2. Render the logs when logs are press
+3. When someone press exit must the let the caller know
+
+BUGS:
+1. Fix time reset when other buttons are pressed
+*/
+
 // Default keys for stopwatch
 var DefaultStopWatchControls = stopWatchControls{
 	start:   keys.KeyOptions{keys.Enter},
@@ -20,7 +30,6 @@ var DefaultStopWatchControls = stopWatchControls{
 
 type log struct {
 	start    time.Time
-	end      time.Time
 	duration time.Duration
 }
 
@@ -33,6 +42,7 @@ type stopWatchControls struct {
 	help    keys.KeyOptions
 }
 
+// Used to create custom controls for the stop watch, if nil or empty array is given for option it will use the default controls
 func NewStopWatchControls(start, pause, reset, exit, logtime, help keys.KeyOptions) stopWatchControls {
 	controls := DefaultStopWatchControls
 
@@ -68,27 +78,25 @@ type stopwatch struct {
 	helpIsShown bool
 }
 
+// Creates the main stopwatch component which is the entry point to render the stopwatch UI
 func NewStopWatch(controls stopWatchControls) stopwatch {
-	return stopwatch{isStarted: false, controls: controls, helpIsShown: false}
+	return stopwatch{isStarted: false, controls: controls, helpIsShown: false, start: time.Now()}
 }
 
-// Main loop for stopwatch functionality
-func (s *stopwatch) Render() {
+// Renders the stopwatch
+func (s *stopwatch) Render() ExitCode {
 	terminal.NewTerminal(10, -1)
-	s.start = time.Now()
 	CURSOR.ClearTerminal()
 	CURSOR.Hide()
 	s.drawHelpSection()
 	s.drawStopWatch()
-	s.controlHandler()
+	return s.eventHandler()
 }
 
-func (s *stopwatch) controlHandler() {
+// Main loop for handle the events that happen with the stop watch
+func (s *stopwatch) eventHandler() ExitCode {
 
-	resizeChan := make(chan [2]int)
-	keysChan := keys.NewKeyChannel()
-	go terminal.ResizeCheck(resizeChan)
-	go keys.KeyChannel(keysChan)
+	startEventSources() // Starts all go routes
 
 	for {
 		if s.isStarted {
@@ -96,12 +104,12 @@ func (s *stopwatch) controlHandler() {
 		}
 		// Key checking in go route to prevent blocking
 		select {
-		case key := <-keysChan:
+		case key := <-KEYSCHANNEL:
 			switch {
 			case s.controls.exit.Contains(key):
 				CURSOR.ClearTerminal()
 				fmt.Print("\033[?1049l")
-				return
+				return QUIT
 			case s.controls.start.Contains(key):
 				s.StartStop()
 			case s.controls.reset.Contains(key):
@@ -111,14 +119,13 @@ func (s *stopwatch) controlHandler() {
 			case s.controls.help.Contains(key):
 				s.showHelpMenu()
 			default:
-				// ignore other keys
+				// Skip all other keys
 			}
-		case size := <-resizeChan:
+		case size := <-RESIZECHANNEL:
 
 			CURSOR.ClearTerminal()
 			CURSOR.Origin()
 			terminal.TERMINAL.SetDimensions(terminal.TERMINAL.GetHeight(), size[0])
-			time.Sleep(time.Second * 1)
 			s.drawHelpSection()
 			s.drawStopWatch()
 
@@ -132,9 +139,7 @@ func (s *stopwatch) controlHandler() {
 
 // Draws stop watch to screen based on the time passed from when it was started
 func (s *stopwatch) drawStopWatch() {
-
 	CURSOR.Origin()
-	CURSOR.ClearLine()
 	elapsed := time.Since(s.start) + s.timelapsed
 	displayTime := fmt.Sprintf("%02d:%02d:%02d",
 		int(elapsed.Hours()),
@@ -144,6 +149,7 @@ func (s *stopwatch) drawStopWatch() {
 	CURSOR.DrawTextCenterX(displayTime)
 }
 
+// Draws the help section which display to key to press to show help
 func (s *stopwatch) drawHelpSection() {
 	CURSOR.OriginBottom()
 	CURSOR.ClearLine()
@@ -151,6 +157,7 @@ func (s *stopwatch) drawHelpSection() {
 	CURSOR.DrawText(string(s.controls.help[0]))
 }
 
+// Starts and Stops the stopwatch
 func (s *stopwatch) StartStop() {
 	if s.isStarted {
 		// functionality when stopwatch is STOPPED
@@ -164,20 +171,49 @@ func (s *stopwatch) StartStop() {
 	}
 }
 
+// Reset the Stopwatch to 0
 func (s *stopwatch) reset() {
 	s.end = time.Now()
 	s.start = time.Now()
+	s.isStarted = false
 	s.timelapsed = 0
 	s.drawStopWatch()
 }
 
+// Logs the current time on the stop watch and will draw a log under the stop watch
 func (s *stopwatch) logTime() {
-	i := 0
-	CURSOR.MoveTo(0, 3)
-	i += 1
-	CURSOR.DrawText(fmt.Sprintf("%d", i))
+	s.logs = append(s.logs, log{duration: time.Since(s.start) + s.timelapsed, start: time.Now()})
+	s.drawLogs()
 }
 
+func (s *stopwatch) drawLogs() {
+	line := 2
+	CURSOR.MoveTo(0, line)
+	for i := len(s.logs) - 1; i > 0; i-- {
+		if line >= terminal.TERMINAL.GetHeight()-2 {
+			break
+		}
+		line += 1
+		CURSOR.DrawTextCenterX(s.logs[i].toString())
+		CURSOR.MoveTo(0, line)
+	}
+}
+
+func (l *log) toString() string {
+	displayTime := fmt.Sprintf("%02d:%02d:%02d",
+		int(l.duration.Hours()),
+		int(l.duration.Minutes())%60,
+		int(l.duration.Seconds())%60,
+	)
+	startTime := fmt.Sprintf("%02d:%02d:%02d",
+		int(l.start.Hour()),
+		int(l.start.Minute()),
+		int(l.start.Second()),
+	)
+	return fmt.Sprintf("Duration: %s\tStart Time: %s", displayTime, startTime)
+}
+
+// Draws all the controls
 func (s *stopwatch) showHelpMenu() {
 	if s.helpIsShown {
 		s.start = time.Now()
@@ -188,5 +224,4 @@ func (s *stopwatch) showHelpMenu() {
 		CURSOR.ClearTerminal()
 	}
 	s.helpIsShown = !s.helpIsShown
-
 }

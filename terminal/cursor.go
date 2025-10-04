@@ -27,6 +27,7 @@ const (
 	HIDE               string     = "\033[?25l"
 	SHOW               string     = "\033[?25h"
 	CLEARLINE          string     = "\033[2K"
+	START              string     = "\033[H"
 )
 
 // Create cursor on the screen
@@ -91,8 +92,7 @@ func (c *cursor) Left(n int) {
 
 // Move cursor back to 0,0
 func (c *cursor) Origin() {
-	c.Up(TERMINAL.height)
-	c.Left(TERMINAL.width)
+	print(START)
 	c.y = 0
 	c.x = 0
 }
