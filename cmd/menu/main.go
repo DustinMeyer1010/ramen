@@ -1,7 +1,10 @@
 package main
 
+import "github.com/DustinMeyer1010/ramen"
+
 func main() {
-	s, _ := ramen.NewSelectionMenu([]string{"hello", "world", "option"}, ramen.NewSelectionMenuControls(nil, nil, nil, nil))
+
+	s, _ := ramen.NewMenu([]string{"hello", "world", "option"}, ramen.NewMenuControls(nil, nil, nil, nil))
 	s.Render()
 	/*
 		cfg := bowl.NewStopWatchCfg(nil, nil, nil, nil)

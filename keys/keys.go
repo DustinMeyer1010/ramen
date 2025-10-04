@@ -11,6 +11,7 @@ var (
 	Esc        key = "\x03"
 	LowerQ     key = "q"
 	UpperQ     key = "Q"
+	LowerL     key = "l"
 	LowerR     key = "r"
 	Space      key = " "
 	UpArrow    key = "\033[A"
@@ -19,6 +20,7 @@ var (
 	LeftArrow  key = "\033[D"
 	Enter      key = "\r"
 	Empty      key = ""
+	LowerH     key = "h"
 )
 
 var KeyAlias map[key]string = map[key]string{
@@ -27,6 +29,7 @@ var KeyAlias map[key]string = map[key]string{
 	LowerQ:     "q",
 	UpperQ:     "Q",
 	LowerR:     "r",
+	LowerH:     "h",
 	UpArrow:    "↑",
 	RightArrow: "→",
 	LeftArrow:  "←",
@@ -47,13 +50,21 @@ func GetKeyPressed() key {
 		panic(err)
 	}
 
-	//fmt.Print(string(buf[:n]))
-
 	if n == 0 {
 		return key("")
 	}
 
 	return key(buf[:n])
+}
+
+func KeyChannel(keysChan chan key) {
+	for {
+		key := GetKeyPressed()
+		if key != Empty {
+			keysChan <- key
+		}
+
+	}
 }
 
 type KeyOptions []key
